@@ -1,0 +1,20 @@
+name: Validate Schema
+
+on:
+  push:
+    paths:
+      - 'schema/**.sql'
+  pull_request:
+    paths:
+      - 'schema/**.sql'
+
+jobs:
+  validate-sql:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      - name: Install sqlfluff
+        run: pip install sqlfluff
+      - name: Lint schema SQL
+        run: sqlfluff lint schema/schema.sql --dialect postgres
