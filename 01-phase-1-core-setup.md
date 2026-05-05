@@ -224,18 +224,18 @@ Open a Pull Request from `phase-1-setup` into `main` on GitHub. In the PR descri
 
 Before opening your PR, confirm each of these:
 
-- [ ] Repository forked and cloned
-- [ ] PostgreSQL database running on Dokploy
-- [ ] pgAdmin connected to the database
-- [ ] Schema SQL executed — tables and views exist
-- [ ] NocoDB deployed and connected to the database
-- [ ] MCP connected to your AI tool
-- [ ] Skill files added to your Claude project
-- [ ] Braindump session completed — at least 10 skills in the database
-- [ ] Master profile ingested
-- [ ] NocoDB shows skills correctly
-- [ ] Views returning data in pgAdmin
-- [ ] Changes committed and PR opened
+- [-] Repository forked and cloned
+- [-] PostgreSQL database running on Dokploy
+- [-] pgAdmin connected to the database
+- [-] Schema SQL executed — tables and views exist
+- [-] NocoDB deployed and connected to the database
+- [-] MCP connected to your AI tool
+- [-] Skill files added to your Claude project
+- [-] Braindump session completed — at least 10 skills in the database
+- [-] Master profile ingested
+- [-] NocoDB shows skills correctly
+- [-] Views returning data in pgAdmin
+- [] Changes committed and PR opened
 
 ---
 
