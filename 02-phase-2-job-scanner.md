@@ -46,7 +46,9 @@ CREATE TABLE market_signals (
   source       TEXT,
   role_matched TEXT,
   captured_on  DATE DEFAULT CURRENT_DATE,
-  reviewed     BOOLEAN DEFAULT FALSE
+  reviewed     BOOLEAN DEFAULT FALSE,
+  estimated_salary Number
+  salary_currency TEXT
 );
 ```
 
@@ -239,15 +241,15 @@ Open a Pull Request from `phase-2-job-scanner` into `main`. In the PR descriptio
 
 ## Phase 2 checklist
 
-- [ ] `market_signals` table created and verified
-- [ ] n8n deployed and running
-- [ ] Job scanner workflow built with all five nodes
-- [ ] Workflow tested manually — data appears in NocoDB
-- [ ] Schedule activated
-- [ ] `pending_signals` view created
-- [ ] Daily review tested via agent chat
-- [ ] Workflow exported and saved to `automations/job_scanner.json`
-- [ ] Changes committed and PR opened with screenshot
+- [-] `market_signals` table created and verified
+- [-] n8n deployed and running
+- [-] Job scanner workflow built with all five nodes
+- [-] Workflow tested manually — data appears in NocoDB
+- [-] Schedule activated
+- [-] `pending_signals` view created
+- [-] Daily review tested via agent chat
+- [-] Workflow exported and saved to `automations/job_scanner.json`
+- [-] Changes committed and PR opened with screenshot
 
 ---
 
