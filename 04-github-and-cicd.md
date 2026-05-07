@@ -166,9 +166,9 @@ Once it is green, merge your PR into `main`.
 
 ## Phase 4 checklist
 
-- [ ] Repository structure matches the layout above
-- [ ] README written — clear, scannable, covers prerequisites and setup
-- [ ] `.github/workflows/validate.yml` created
+- [-] Repository structure matches the layout above
+- [-] README written — clear, scannable, covers prerequisites and setup
+- [-] `.github/workflows/validate.yml` created
 - [ ] Pipeline triggered on push — visible in GitHub Actions tab
 - [ ] Schema lint passing — green tick on the PR
 - [ ] PR merged into main
