@@ -1,3 +1,394 @@
 {
-  "_comment": "Export your n8n news feed workflow and replace this file. See 03-phase-3-news-feed.md for build instructions."
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "triggerAtHour": 8,
+              "triggerAtMinute": 30
+            }
+          ]
+        }
+      },
+      "id": "529bb1a3-8384-4ce4-aafd-6f51d037f58a",
+      "name": "Schedule Trigger",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.1,
+      "position": [
+        -560,
+        320
+      ]
+    },
+    {
+      "parameters": {
+        "url": "https://hnrss.org/newest?q=AI+LLM+agent",
+        "options": {}
+      },
+      "id": "d5b645f5-3a4e-49c1-9335-c60a3270beef",
+      "name": "RSS - Hacker News AI",
+      "type": "n8n-nodes-base.rssFeedRead",
+      "typeVersion": 1,
+      "position": [
+        -336,
+        -64
+      ]
+    },
+    {
+      "parameters": {
+        "url": "https://towardsdatascience.com/feed",
+        "options": {}
+      },
+      "id": "a2a3513b-9c2d-452b-b08a-07d677055e54",
+      "name": "RSS - Towards Data Science",
+      "type": "n8n-nodes-base.rssFeedRead",
+      "typeVersion": 1,
+      "position": [
+        -336,
+        128
+      ]
+    },
+    {
+      "parameters": {
+        "url": "https://simonwillison.net/atom/everything",
+        "options": {}
+      },
+      "id": "14838a27-2c01-420f-9af9-a8099c91ea1d",
+      "name": "RSS - Simon Willison",
+      "type": "n8n-nodes-base.rssFeedRead",
+      "typeVersion": 1,
+      "position": [
+        -336,
+        320
+      ]
+    },
+    {
+      "parameters": {
+        "url": "https://mshibanami.github.io/GitHubTrendingRSS/daily/python.xml",
+        "options": {}
+      },
+      "id": "1cf630f5-1a86-4eb7-bd17-40fe3925b372",
+      "name": "RSS - GitHub Trending Python",
+      "type": "n8n-nodes-base.rssFeedRead",
+      "typeVersion": 1,
+      "position": [
+        -336,
+        512
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const items = $input.all();\nconst keywords = {\n  high: [\n    'llm', 'agent', 'mcp', 'langchain', 'langgraph', 'rag',\n    'vector', 'fine-tuning', 'ollama', 'openai', 'anthropic',\n    'n8n', 'automation', 'postgresql', 'docker', 'kubernetes'\n  ],\n  medium: [\n    'ai', 'machine learning', 'python', 'api', 'backend',\n    'open source', 'developer tools', 'deployment', 'cloud'\n  ]\n};\n\nconst results = [];\n\nfor (const item of items) {\n  const text = (\n    (item.json.title || '') + ' ' +\n    (item.json.contentSnippet || item.json.summary || '')\n  ).toLowerCase();\n\n  let relevance = null;\n\n  if (keywords.high.some(k => text.includes(k))) {\n    relevance = 'high';\n  } else if (keywords.medium.some(k => text.includes(k))) {\n    relevance = 'medium';\n  }\n\n  if (!relevance) continue;\n\n  const matchedTags = [\n    ...keywords.high.filter(k => text.includes(k)),\n    ...keywords.medium.filter(k => text.includes(k))\n  ].slice(0, 5).join(', ');\n\n  results.push({\n    json: {\n      title: item.json.title,\n      summary: (item.json.contentSnippet || item.json.summary || '').slice(0, 300),\n      link: item.json.link,\n      relevance,\n      tags: matchedTags,\n      source: item.json.feedUrl || 'rss',\n      published_on: item.json.pubDate\n        ? new Date(item.json.pubDate).toISOString().split('T')[0]\n        : new Date().toISOString().split('T')[0],\n      captured_on: new Date().toISOString().split('T')[0],\n      actioned: false\n    }\n  });\n}\n\nreturn results;"
+      },
+      "id": "85d5f29d-97e4-45fc-9944-3f1c0c440e28",
+      "name": "Filter by Relevance",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        112,
+        320
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const inserted = $input.all().length;\nreturn [{ json: { message: `News feed complete. ${inserted} articles saved.` } }];"
+      },
+      "id": "463cd6d3-e902-478d-8f2f-e29a49b40ee2",
+      "name": "Log Completion",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        560,
+        320
+      ]
+    },
+    {
+      "parameters": {
+        "numberInputs": 5
+      },
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3.2,
+      "position": [
+        -112,
+        272
+      ],
+      "id": "15c288c2-5b99-4ec7-bcc1-e83c57df4902",
+      "name": "Merge1"
+    },
+    {
+      "parameters": {
+        "schema": {
+          "__rl": true,
+          "mode": "list",
+          "value": "public"
+        },
+        "table": {
+          "__rl": true,
+          "value": "news_feed",
+          "mode": "list",
+          "cachedResultName": "news_feed"
+        },
+        "columns": {
+          "mappingMode": "autoMapInputData",
+          "value": {
+            "actioned": false,
+            "id": 0
+          },
+          "matchingColumns": [
+            "id"
+          ],
+          "schema": [
+            {
+              "id": "id",
+              "displayName": "id",
+              "required": false,
+              "defaultMatch": true,
+              "display": true,
+              "type": "number",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "title",
+              "displayName": "title",
+              "required": true,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "summary",
+              "displayName": "summary",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "link",
+              "displayName": "link",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "relevance",
+              "displayName": "relevance",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "tags",
+              "displayName": "tags",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "source",
+              "displayName": "source",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "published_on",
+              "displayName": "published_on",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "dateTime",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "captured_on",
+              "displayName": "captured_on",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "dateTime",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "actioned",
+              "displayName": "actioned",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "boolean",
+              "canBeUsedToMatch": true
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.6,
+      "position": [
+        336,
+        320
+      ],
+      "id": "4b2ebfc6-8ba5-4721-baa6-4d36167f8406",
+      "name": "Insert rows in a table",
+      "credentials": {
+        "postgres": {
+          "id": "Uyy0IVTUULjS9OPG",
+          "name": "Postgres account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "url": "https://raw.githubusercontent.com/cnzhujie/ai-rss-feed/main/rss/deeplearning_the_batch_rss.xml",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.rssFeedRead",
+      "typeVersion": 1.2,
+      "position": [
+        -336,
+        704
+      ],
+      "id": "12497f60-56ff-482b-b447-7afdc635b7da",
+      "name": "RSS Read- Deep Learning.ai"
+    }
+  ],
+  "connections": {
+    "Schedule Trigger": {
+      "main": [
+        [
+          {
+            "node": "RSS - Hacker News AI",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "RSS - Towards Data Science",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "RSS - Simon Willison",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "RSS - GitHub Trending Python",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "RSS Read- Deep Learning.ai",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "RSS - Hacker News AI": {
+      "main": [
+        [
+          {
+            "node": "Merge1",
+            "type": "main",
+            "index": 2
+          }
+        ]
+      ]
+    },
+    "RSS - Towards Data Science": {
+      "main": [
+        [
+          {
+            "node": "Merge1",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "RSS - Simon Willison": {
+      "main": [
+        [
+          {
+            "node": "Merge1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "RSS - GitHub Trending Python": {
+      "main": [
+        [
+          {
+            "node": "Merge1",
+            "type": "main",
+            "index": 3
+          }
+        ]
+      ]
+    },
+    "Filter by Relevance": {
+      "main": [
+        [
+          {
+            "node": "Insert rows in a table",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Merge1": {
+      "main": [
+        [
+          {
+            "node": "Filter by Relevance",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Insert rows in a table": {
+      "main": [
+        [
+          {
+            "node": "Log Completion",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "RSS Read- Deep Learning.ai": {
+      "main": [
+        [
+          {
+            "node": "Merge1",
+            "type": "main",
+            "index": 4
+          }
+        ]
+      ]
+    }
+  },
+  "pinData": {},
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "2d394ace2accad3b3355182cb7d8c56e133f134cc2d20f402712fb972424dad6"
+  }
 }

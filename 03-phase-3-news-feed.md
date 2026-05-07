@@ -248,16 +248,16 @@ Open a Pull Request from `phase-3-news-feed` into `main`. Include a screenshot o
 
 ## Phase 3 checklist
 
-- [ ] `news_feed` table created and verified
-- [ ] n8n workflow built with all six nodes
-- [ ] At least two RSS sources connected
-- [ ] Workflow tested manually — articles appear in NocoDB
-- [ ] Relevance filtering working — only `high` and `medium` articles saved
-- [ ] Schedule activated
-- [ ] `pending_news` view created
-- [ ] Full daily review tested — both job signals and news in one session
-- [ ] Workflow exported to `automations/news_feed.json`
-- [ ] Changes committed and PR opened with screenshot
+- [-] `news_feed` table created and verified
+- [-] n8n workflow built with all six nodes
+- [-] At least two RSS sources connected
+- [-] Workflow tested manually — articles appear in NocoDB
+- [-] Relevance filtering working — only `high` and `medium` articles saved
+- [-] Schedule activated
+- [-] `pending_news` view created
+- [-] Full daily review tested — both job signals and news in one session
+- [-] Workflow exported to `automations/news_feed.json`
+- [-] Changes committed and PR opened with screenshot
 
 ---
 
