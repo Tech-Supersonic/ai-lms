@@ -1,3 +1,699 @@
 {
-  "_comment": "Export your n8n job scanner workflow and replace this file. See 02-phase-2-job-scanner.md for build instructions."
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "hours",
+              "hoursInterval": 24
+            }
+          ]
+        }
+      },
+      "id": "8c7deac0-1867-4cf9-8f50-a8dc5d04d844",
+      "name": "Daily at 08:00",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [
+        -1648,
+        -64
+      ]
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "9893c6e5-3f15-4872-a613-144928ab66c4",
+              "name": "job_titles",
+              "value": "['AI Engineer', 'Backend Engineer', 'Data Engineer', 'ML Engineer', 'Data Science']",
+              "type": "array"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        -1424,
+        -64
+      ],
+      "id": "6a30007b-ea31-42c5-a8d0-27ad98fd069e",
+      "name": "Edit Fields"
+    },
+    {
+      "parameters": {
+        "jsCode": "const titles = $input.first().json.job_titles || [];\nreturn titles.map(title => ({ json: { job_title: title } }));"
+      },
+      "id": "9fd87c27-3568-4948-a3e9-231bfd160bef",
+      "name": "Prep Loop Items1",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -1200,
+        -64
+      ]
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "id": "56ebd853-36b5-427a-8aa4-40b707407b2d",
+      "name": "Loop Over Titles1",
+      "type": "n8n-nodes-base.splitInBatches",
+      "typeVersion": 3,
+      "position": [
+        -976,
+        -64
+      ]
+    },
+    {
+      "parameters": {
+        "url": "https://api.adzuna.com/v1/api/jobs/us/search/1",
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "app_id",
+              "value": "4982ce0f"
+            },
+            {
+              "name": "app_key",
+              "value": "a47d5c84ec7d3d2bdf4f4173128bcb5d"
+            },
+            {
+              "name": "what",
+              "value": "={{ $json.job_title }}"
+            },
+            {
+              "name": "results_per_page",
+              "value": "50"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "dd073eb9-d84b-4e7d-ac69-d579ca690257",
+      "name": "Fetch Adzuna",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        -752,
+        -256
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const raw = $input.first().json;\nconst results = raw.results || [];\nreturn results.map(job => ({\n  json: {\n    title: job.title || '',\n    description: job.description || '',\n    source: 'adzuna'\n  }\n}));"
+      },
+      "id": "f6bb833f-e794-4613-9309-177cf4887a9d",
+      "name": "Normalize Adzuna",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -528,
+        -256
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "return $input.all();"
+      },
+      "id": "7dbf386b-134e-4f63-a103-307b86dcf9bf",
+      "name": "Merge All Sources",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -304,
+        -256
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const postings = $input.all();\nconst skillKeywords = [\n  'python', 'javascript', 'typescript', 'node.js', 'fastapi',\n  'postgresql', 'docker', 'kubernetes', 'terraform', 'aws', 'gcp',\n  'langchain', 'langgraph', 'n8n', 'mcp', 'rag', 'vector database',\n  'pinecone', 'redis', 'graphql', 'rest api', 'ci/cd', 'github actions',\n  'ollama', 'openai', 'anthropic', 'llm', 'machine learning', 'mlops'\n];\n\nconst counts = {};\nconst sources = {};\nconst titlesForSkill = {};\n\nfor (const item of postings) {\n  const text = ((item.json.description || '') + ' ' + (item.json.title || '')).toLowerCase();\n  const src  = item.json.source || 'unknown';\n  const title = (item.json.title || '').trim();\n\n  for (const skill of skillKeywords) {\n    if (text.includes(skill)) {\n      counts[skill] = (counts[skill] || 0) + 1;\n\n      if (!sources[skill]) sources[skill] = new Set();\n      sources[skill].add(src);\n\n      if (!titlesForSkill[skill]) titlesForSkill[skill] = [];\n      if (title && titlesForSkill[skill].length < 3) {\n        titlesForSkill[skill].push(title);\n      }\n    }\n  }\n}\n\nreturn Object.entries(counts)\n  .filter(([_, count]) => count > 1)\n  .map(([skill, frequency]) => ({\n    json: {\n      skill_name: skill,\n      frequency,\n      source: Array.from(sources[skill]).join(', '),\n      role_matched: 'ai/backend developer',\n      captured_on: new Date().toISOString().split('T')[0],\n      reviewed: false,\n      _jobsworth_title: titlesForSkill[skill]?.[0] || 'software developer',\n      _jobsworth_description: skill\n    }\n  }));"
+      },
+      "id": "12d1bc73-c4a3-468c-865f-7e998a0b786a",
+      "name": "Extract Skill Keywords",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -80,
+        -256
+      ]
+    },
+    {
+      "parameters": {
+        "amount": 10
+      },
+      "id": "eac5dfe0-cbe8-41ec-8600-139aa06f2005",
+      "name": "Wait 10s1",
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1.1,
+      "position": [
+        592,
+        -88
+      ],
+      "webhookId": "wait-10s-loop-back"
+    },
+    {
+      "parameters": {
+        "jsCode": "const inserted = $input.all().length;\nconst withSalary = $input.all().filter(i => i.json.estimated_salary !== null).length;\nreturn [{\n  json: {\n    message: `Job scan complete. ${inserted} skills saved. ${withSalary} have salary estimates.`\n  }\n}];"
+      },
+      "id": "5d9bf263-5ea4-46bc-a04f-2aa06288be73",
+      "name": "Log Completion1",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -752,
+        -64
+      ]
+    },
+    {
+      "parameters": {
+        "schema": {
+          "__rl": true,
+          "mode": "list",
+          "value": "public"
+        },
+        "table": {
+          "__rl": true,
+          "value": "market_signals",
+          "mode": "name"
+        },
+        "columns": {
+          "mappingMode": "autoMapInputData",
+          "value": null,
+          "matchingColumns": [],
+          "schema": [],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.6,
+      "position": [
+        368,
+        -256
+      ],
+      "id": "6d3ab728-2e15-4c85-98cf-bd7a59db5eb5",
+      "name": "Insert rows in a table",
+      "credentials": {
+        "postgres": {
+          "id": "Uyy0IVTUULjS9OPG",
+          "name": "Postgres account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "// Zip salary response back onto skill rows by index\nconst skillItems = $('Extract Skill Keywords').all();\n\nreturn skillItems.map((_, i) => {\n  const skill = skillItems[i]?.json || {};\n\n  return {\n    json: {\n      skill_name:       skill.skill_name,\n      frequency:        skill.frequency,\n      source:           skill.source,\n      role_matched:     skill.role_matched,\n      captured_on:      skill.captured_on,\n      reviewed:         false\n    }\n  };\n});"
+      },
+      "id": "86fcc6e4-3acb-49c0-beeb-aeb6c19afac3",
+      "name": "Merge Salary into Row1",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        144,
+        -256
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const raw = $input.first().json;\nconst jobs = raw.jobs || [];\nreturn jobs.map(job => ({\n  json: {\n    title: job.title || '',\n    description: (job.description || '').replace(/<[^>]+>/g, ' '),\n    source: 'remotive'\n  }\n}));"
+      },
+      "id": "6210b96a-ba4b-4495-8676-b6a2c273f3d2",
+      "name": "Normalize Remotive1",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -528,
+        160
+      ]
+    },
+    {
+      "parameters": {
+        "url": "https://remotive.com/api/remote-jobs",
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "category",
+              "value": "={{ $json.job_title }}"
+            },
+            {
+              "name": "limit",
+              "value": "50"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "947d258e-3eb8-401a-ba10-68f1ea6ac750",
+      "name": "Fetch Remotive1",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        -752,
+        160
+      ]
+    },
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "hours",
+              "hoursInterval": 24
+            }
+          ]
+        }
+      },
+      "id": "959ea5e3-a59c-4db0-9a5c-cb48f54ddb57",
+      "name": "Daily at 08:",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [
+        -1648,
+        352
+      ]
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "9893c6e5-3f15-4872-a613-144928ab66c4",
+              "name": "job_titles",
+              "value": "['AI Engineer', 'Backend Engineer', 'Data Engineer', 'ML Engineer', 'Data Science']",
+              "type": "array"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        -1424,
+        352
+      ],
+      "id": "8ca99c06-19ac-4551-855c-453c18c64fb0",
+      "name": "Edit Fields1"
+    },
+    {
+      "parameters": {
+        "jsCode": "const titles = $input.first().json.job_titles || [];\nreturn titles.map(title => ({ json: { job_title: title } }));"
+      },
+      "id": "39d0313a-2304-4979-835c-9f16c70dc90a",
+      "name": "Prep Loop Items",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -1200,
+        352
+      ]
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "id": "cddae74e-afd4-44bc-9b79-6064250083fd",
+      "name": "Loop Over Titles",
+      "type": "n8n-nodes-base.splitInBatches",
+      "typeVersion": 3,
+      "position": [
+        -976,
+        352
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "return $input.all();"
+      },
+      "id": "3ff6eb58-4aac-4410-996d-171d18ccb216",
+      "name": "Merge All Sources1",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -304,
+        160
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const postings = $input.all();\nconst skillKeywords = [\n  'python', 'javascript', 'typescript', 'node.js', 'fastapi',\n  'postgresql', 'docker', 'kubernetes', 'terraform', 'aws', 'gcp',\n  'langchain', 'langgraph', 'n8n', 'mcp', 'rag', 'vector database',\n  'pinecone', 'redis', 'graphql', 'rest api', 'ci/cd', 'github actions',\n  'ollama', 'openai', 'anthropic', 'llm', 'machine learning', 'mlops'\n];\n\nconst counts = {};\nconst sources = {};\nconst titlesForSkill = {};\n\nfor (const item of postings) {\n  const text = ((item.json.description || '') + ' ' + (item.json.title || '')).toLowerCase();\n  const src  = item.json.source || 'unknown';\n  const title = (item.json.title || '').trim();\n\n  for (const skill of skillKeywords) {\n    if (text.includes(skill)) {\n      counts[skill] = (counts[skill] || 0) + 1;\n\n      if (!sources[skill]) sources[skill] = new Set();\n      sources[skill].add(src);\n\n      if (!titlesForSkill[skill]) titlesForSkill[skill] = [];\n      if (title && titlesForSkill[skill].length < 3) {\n        titlesForSkill[skill].push(title);\n      }\n    }\n  }\n}\n\nreturn Object.entries(counts)\n  .filter(([_, count]) => count > 1)\n  .map(([skill, frequency]) => ({\n    json: {\n      skill_name: skill,\n      frequency,\n      source: Array.from(sources[skill]).join(', '),\n      role_matched: 'ai/backend developer',\n      captured_on: new Date().toISOString().split('T')[0],\n      reviewed: false,\n      _jobsworth_title: titlesForSkill[skill]?.[0] || 'software developer',\n      _jobsworth_description: skill\n    }\n  }));"
+      },
+      "id": "acbc1ca3-686b-4eb7-924c-50509558d78a",
+      "name": "Extract Skill Keywords1",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -80,
+        160
+      ]
+    },
+    {
+      "parameters": {
+        "amount": 10
+      },
+      "id": "bec85985-6290-4c4e-ba22-0bc942757124",
+      "name": "Wait 10s",
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1.1,
+      "position": [
+        592,
+        328
+      ],
+      "webhookId": "wait-10s-loop-back"
+    },
+    {
+      "parameters": {
+        "jsCode": "const inserted = $input.all().length;\nconst withSalary = $input.all().filter(i => i.json.estimated_salary !== null).length;\nreturn [{\n  json: {\n    message: `Job scan complete. ${inserted} skills saved. ${withSalary} have salary estimates.`\n  }\n}];"
+      },
+      "id": "a51c9bf3-084c-48d5-8400-81f4fb910ec8",
+      "name": "Log Completion",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -752,
+        352
+      ]
+    },
+    {
+      "parameters": {
+        "schema": {
+          "__rl": true,
+          "mode": "list",
+          "value": "public"
+        },
+        "table": {
+          "__rl": true,
+          "value": "market_signals",
+          "mode": "name"
+        },
+        "columns": {
+          "mappingMode": "autoMapInputData",
+          "value": {},
+          "matchingColumns": [],
+          "schema": [],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.6,
+      "position": [
+        368,
+        160
+      ],
+      "id": "a8646509-dfd1-42e1-a6c8-ede22f89d923",
+      "name": "Insert rows in a table1",
+      "credentials": {
+        "postgres": {
+          "id": "Uyy0IVTUULjS9OPG",
+          "name": "Postgres account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "// Zip salary response back onto skill rows by index\nconst skillItems = $('Extract Skill Keywords1').all();\n\nreturn skillItems.map((_, i) => {\n  const skill = skillItems[i]?.json || {};\n\n  return {\n    json: {\n      skill_name:       skill.skill_name,\n      frequency:        skill.frequency,\n      source:           skill.source,\n      role_matched:     skill.role_matched,\n      captured_on:      skill.captured_on,\n      reviewed:         false\n    }\n  };\n});"
+      },
+      "id": "1564507e-8249-46e3-b4cc-e81b4f60cd71",
+      "name": "Merge Salary into Row",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        144,
+        160
+      ]
+    }
+  ],
+  "connections": {
+    "Daily at 08:00": {
+      "main": [
+        [
+          {
+            "node": "Edit Fields",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Edit Fields": {
+      "main": [
+        [
+          {
+            "node": "Prep Loop Items1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Prep Loop Items1": {
+      "main": [
+        [
+          {
+            "node": "Loop Over Titles1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Loop Over Titles1": {
+      "main": [
+        [
+          {
+            "node": "Log Completion1",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Fetch Adzuna",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Fetch Adzuna": {
+      "main": [
+        [
+          {
+            "node": "Normalize Adzuna",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Normalize Adzuna": {
+      "main": [
+        [
+          {
+            "node": "Merge All Sources",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Merge All Sources": {
+      "main": [
+        [
+          {
+            "node": "Extract Skill Keywords",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Extract Skill Keywords": {
+      "main": [
+        [
+          {
+            "node": "Merge Salary into Row1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Wait 10s1": {
+      "main": [
+        [
+          {
+            "node": "Loop Over Titles1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Insert rows in a table": {
+      "main": [
+        [
+          {
+            "node": "Wait 10s1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Merge Salary into Row1": {
+      "main": [
+        [
+          {
+            "node": "Insert rows in a table",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Normalize Remotive1": {
+      "main": [
+        [
+          {
+            "node": "Merge All Sources1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Fetch Remotive1": {
+      "main": [
+        [
+          {
+            "node": "Normalize Remotive1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Daily at 08:": {
+      "main": [
+        [
+          {
+            "node": "Edit Fields1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Edit Fields1": {
+      "main": [
+        [
+          {
+            "node": "Prep Loop Items",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Prep Loop Items": {
+      "main": [
+        [
+          {
+            "node": "Loop Over Titles",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Loop Over Titles": {
+      "main": [
+        [
+          {
+            "node": "Log Completion",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Fetch Remotive1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Merge All Sources1": {
+      "main": [
+        [
+          {
+            "node": "Extract Skill Keywords1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Extract Skill Keywords1": {
+      "main": [
+        [
+          {
+            "node": "Merge Salary into Row",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Wait 10s": {
+      "main": [
+        [
+          {
+            "node": "Loop Over Titles",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Insert rows in a table1": {
+      "main": [
+        [
+          {
+            "node": "Wait 10s",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Merge Salary into Row": {
+      "main": [
+        [
+          {
+            "node": "Insert rows in a table1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "pinData": {},
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "2d394ace2accad3b3355182cb7d8c56e133f134cc2d20f402712fb972424dad6"
+  }
 }
