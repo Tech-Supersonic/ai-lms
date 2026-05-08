@@ -1,3 +1,163 @@
 {
-  "_comment": "Export your n8n news feed workflow and replace this file. See 03-phase-3-news-feed.md for build instructions."
+  "name": "News Feed",
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "triggerAtHour": 20,
+              "triggerAtMinute": 30
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [
+        0,
+        0
+      ],
+      "id": "147f16cb-076c-4753-81b3-ef52f7f4553f",
+      "name": "Schedule Trigger"
+    },
+    {
+      "parameters": {
+        "url": "https://hnrss.org/newest?q=AI+LLM+agent",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.rssFeedRead",
+      "typeVersion": 1.2,
+      "position": [
+        224,
+        -128
+      ],
+      "id": "5242977e-349d-43b7-9856-ccc6bfffc1a9",
+      "name": "RSS Read"
+    },
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3.2,
+      "position": [
+        560,
+        0
+      ],
+      "id": "e93197bf-ad03-4a31-85cb-4f7d47fbb4c7",
+      "name": "Merge"
+    },
+    {
+      "parameters": {
+        "url": "https://simonwillison.net/atom/everything",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.rssFeedRead",
+      "typeVersion": 1.2,
+      "position": [
+        224,
+        144
+      ],
+      "id": "913c67e1-5ab5-49b6-8534-85e0e04d7a82",
+      "name": "RSS Read1"
+    },
+    {
+      "parameters": {
+        "jsCode": "const items = $input.all();\nconst keywords = {\n  high: [\n    'llm', 'agent', 'mcp', 'langchain', 'langgraph', 'rag',\n    'vector', 'ollama', 'openai', 'anthropic',\n    'n8n', 'automation', 'postgresql', 'docker'\n  ],\n  medium: [\n    'ai', 'machine learning', 'python', 'api', 'backend',\n    'open source', 'developer tools', 'deployment'\n  ]\n};\n\nconst results = [];\n\nfor (const item of items) {\n  const text = (\n    (item.json.title || '') + ' ' +\n    (item.json.contentSnippet || item.json.summary || item.json.content || '')\n  ).toLowerCase();\n\n  let relevance = null;\n\n  if (keywords.high.some(k => text.includes(k))) {\n    relevance = 'high';\n  } else if (keywords.medium.some(k => text.includes(k))) {\n    relevance = 'medium';\n  }\n\n  if (!relevance) continue;\n\n  const matchedTags = [\n    ...keywords.high.filter(k => text.includes(k)),\n    ...keywords.medium.filter(k => text.includes(k))\n  ].slice(0, 5).join(', ');\n\n  results.push({\n    json: {\n      title: item.json.title,\n      summary: (item.json.contentSnippet || item.json.summary || '').slice(0, 300),\n      link: item.json.link,\n      relevance,\n      tags: matchedTags,\n      source: item.json.feedUrl || 'rss',\n      published_on: item.json.pubDate\n        ? new Date(item.json.pubDate).toISOString().split('T')[0]\n        : new Date().toISOString().split('T')[0],\n      captured_on: new Date().toISOString().split('T')[0],\n      actioned: false\n    }\n  });\n}\n\nreturn results;"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        704,
+        0
+      ],
+      "id": "14d57e8a-c17d-4200-87bd-5ab247fc0fcf",
+      "name": "Code"
+    },
+    {
+      "parameters": {
+        "jsCode": "const inserted = $input.all().length;\nreturn [{ json: { message: `News feed complete. ${inserted} articles saved.` } }];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        912,
+        0
+      ],
+      "id": "c3fb5722-9f0f-4fab-9ab0-11aaa02f6c79",
+      "name": "Code1"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Schedule Trigger": {
+      "main": [
+        [
+          {
+            "node": "RSS Read",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "RSS Read1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "RSS Read": {
+      "main": [
+        [
+          {
+            "node": "Merge",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "RSS Read1": {
+      "main": [
+        [
+          {
+            "node": "Merge",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "Merge": {
+      "main": [
+        [
+          {
+            "node": "Code",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code": {
+      "main": [
+        [
+          {
+            "node": "Code1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "63bfa038-8f8c-491e-94fe-4da2b0283cc8",
+  "meta": {
+    "instanceId": "9b5cbdfd91a8a604c027e894e6aa9a6726dd639f99f46e0edc89452cb28b796b"
+  },
+  "id": "joHe3ScSqriBLCIi",
+  "tags": []
 }
