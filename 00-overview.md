@@ -119,6 +119,31 @@ If any of these are unfamiliar, spend a day on each before starting. Do not skip
 
 ---
 
+## Before you start — checklist
+
+Before touching any phase document, confirm both lists below are complete.
+
+**What you need to have received from your instructor:**
+
+- [ ] A domain assigned to you (e.g. `yourname.tss-domain.com`)
+- [ ] Database port opened on the TSS server for your instance
+- [ ] Dokploy project created and access granted to you
+- [ ] Dokploy login credentials (server URL, username, password)
+- [ ] Invite to the GitHub organisation or assignment repository
+- [ ] Claude.ai account access or credentials
+
+If any of these are missing, do not start. Ask your instructor to complete the setup first.
+
+**What you need to send back to your instructor before starting:**
+
+- [ ] Your GitHub username — so you can be added to the repo
+- [ ] Confirmation that you have forked the repository
+- [ ] Your forked repo link — so your instructor can be added as admin to review your PRs
+
+Once both lists are ticked, go to `01-phase-1-core-setup.md`.
+
+---
+
 ## How this assignment works
 
 Each phase has its own document. Read only the document for the phase you are currently on. Each document tells you exactly what to do, what to submit, and what the next step is.
