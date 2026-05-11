@@ -231,3 +231,4 @@ ORDER BY table_name;
 -- ------------------------------------------------------------
 
 -- SELECT setval('learning_skills_id_seq', (SELECT MAX(id) FROM learning_skills));
+-- updated
