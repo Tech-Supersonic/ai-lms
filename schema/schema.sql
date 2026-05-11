@@ -9,58 +9,58 @@
 -- ------------------------------------------------------------
 
 CREATE TABLE learning_skills (
-    id           SERIAL PRIMARY KEY,
-    number       INTEGER UNIQUE,
-    name         TEXT NOT NULL,
-    category     TEXT NOT NULL,
-    summary      TEXT,
-    link         TEXT,
-    why          TEXT,
-    needs_first  TEXT,
-    depth        TEXT DEFAULT 'working',
-    priority     INTEGER DEFAULT 2,
-    status       TEXT DEFAULT 'not_started',
-    hours_est    NUMERIC(5, 1),
+    id SERIAL PRIMARY KEY,
+    number INTEGER UNIQUE,
+    name TEXT NOT NULL,
+    category TEXT NOT NULL,
+    summary TEXT,
+    link TEXT,
+    why TEXT,
+    needs_first TEXT,
+    depth TEXT DEFAULT 'working',
+    priority INTEGER DEFAULT 2,
+    status TEXT DEFAULT 'not_started',
+    hours_est NUMERIC(5, 1),
     hours_actual NUMERIC(5, 1) DEFAULT 0,
-    started_on   DATE,
-    finished_on  DATE,
-    project      TEXT,
-    deliverable  TEXT,
-    notes        TEXT,
-    updated_at   TIMESTAMPTZ DEFAULT NOW()
+    started_on DATE,
+    finished_on DATE,
+    project TEXT,
+    deliverable TEXT,
+    notes TEXT,
+    updated_at TIMESTAMPTZ DEFAULT NOW()
 );
 
 CREATE TABLE tools (
-    id       SERIAL PRIMARY KEY,
-    name     TEXT NOT NULL,
+    id SERIAL PRIMARY KEY,
+    name TEXT NOT NULL,
     category TEXT NOT NULL,
-    status   TEXT DEFAULT 'aware',
-    link     TEXT,
-    notes    TEXT,
+    status TEXT DEFAULT 'aware',
+    link TEXT,
+    notes TEXT,
     added_on DATE DEFAULT CURRENT_DATE
 );
 
 CREATE TABLE market_signals (
-    id           SERIAL PRIMARY KEY,
-    skill_name   TEXT NOT NULL,
-    frequency    INTEGER DEFAULT 1,
-    source       TEXT,
+    id SERIAL PRIMARY KEY,
+    skill_name TEXT NOT NULL,
+    frequency INTEGER DEFAULT 1,
+    source TEXT,
     role_matched TEXT,
-    captured_on  DATE DEFAULT CURRENT_DATE,
-    reviewed     BOOLEAN DEFAULT FALSE
+    captured_on DATE DEFAULT CURRENT_DATE,
+    reviewed BOOLEAN DEFAULT FALSE
 );
 
 CREATE TABLE news_feed (
-    id           SERIAL PRIMARY KEY,
-    title        TEXT NOT NULL,
-    summary      TEXT,
-    link         TEXT,
-    relevance    TEXT,
-    tags         TEXT,
-    source       TEXT,
+    id SERIAL PRIMARY KEY,
+    title TEXT NOT NULL,
+    summary TEXT,
+    link TEXT,
+    relevance TEXT,
+    tags TEXT,
+    source TEXT,
     published_on DATE,
-    captured_on  DATE DEFAULT CURRENT_DATE,
-    actioned     BOOLEAN DEFAULT FALSE
+    captured_on DATE DEFAULT CURRENT_DATE,
+    actioned BOOLEAN DEFAULT FALSE
 );
 
 
@@ -98,7 +98,7 @@ CHECK (status IN ('aware', 'used', 'rejected'));
 -- AUTO-UPDATE TRIGGER
 -- ------------------------------------------------------------
 
-CREATE OR REPLACE FUNCTION update_updated_at()
+CREATE OR REPLACE FUNCTION UPDATE_UPDATED_AT()
 RETURNS TRIGGER AS $$
 BEGIN
     NEW.updated_at = NOW();
@@ -108,7 +108,7 @@ $$ LANGUAGE plpgsql;
 
 CREATE TRIGGER skills_updated_at
 BEFORE UPDATE ON learning_skills
-FOR EACH ROW EXECUTE FUNCTION update_updated_at();
+FOR EACH ROW EXECUTE FUNCTION UPDATE_UPDATED_AT();
 
 
 -- ------------------------------------------------------------
@@ -140,7 +140,8 @@ SELECT
     needs_first,
     deliverable
 FROM learning_skills
-WHERE priority = 1
+WHERE
+    priority = 1
     AND status = 'not_started'
 ORDER BY number
 LIMIT 1;
