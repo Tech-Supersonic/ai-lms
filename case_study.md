@@ -2,38 +2,62 @@
 
 ## Part 1 — The Problem
 
-Developers often struggle to organize their learning in a structured way. Most learning happens across multiple disconnected platforms such as YouTube tutorials, online courses, documentation websites, and personal notes. Tracking progress manually becomes difficult over time, especially when learning many technologies at once.
+Without a structured system, developers track their learning in scattered notes, 
+spreadsheets, or just memory. There is no way to know if what you are learning 
+matches what employers actually want. You can spend weeks learning something that 
+is rarely asked for in job postings, while missing skills that appear in every 
+job description you look at.
 
-Another major problem is staying aligned with the job market. Developers may spend weeks learning technologies that are no longer highly demanded while missing skills that companies are actively hiring for. Monitoring job postings, technology trends, and industry news manually takes significant time and effort.
+The other problem is consistency. Most developers start learning something, get 
+distracted, and never finish. Without a system to track what is in progress and 
+what is next, learning becomes random and incomplete.
 
-This project was designed to solve those problems by creating a centralized AI-driven learning management system. The system combines skill tracking, AI-assisted learning, automation workflows, and market analysis into one platform. The goal is to help developers learn more efficiently while staying aligned with real industry demand.
-
----
+This system solves both problems. It tracks every skill, aligns the learning list 
+with real job market data, and gives an AI agent the ability to teach skills using 
+a structured five-step process.
 
 ## Part 2 — The Plan
 
-The system was designed around four main components: PostgreSQL, NocoDB, an AI agent, and n8n automation workflows.
+The system has four components that work together. A PostgreSQL database stores 
+all skills, job market signals, and news articles. NocoDB sits on top of the 
+database as a visual dashboard. An AI agent reads three skill files and uses them 
+to add skills, teach, and run daily reviews. Two n8n automations run daily to 
+pull job market data and tech news into the database.
 
-PostgreSQL was selected as the primary database because it is reliable, scalable, and widely used in professional software development. It stores all structured data including learning skills, tools, market signals, and news feeds. NocoDB was placed on top of PostgreSQL to provide a spreadsheet-style interface for browsing and managing data without writing SQL manually.
+I chose PostgreSQL because it is the industry standard for relational data and 
+appears in almost every backend job description. NocoDB was chosen because it 
+gives a spreadsheet-style interface on top of the database without requiring any 
+frontend code. n8n was chosen for automation because it has a visual workflow 
+builder and connects to APIs without writing much code.
 
-The AI agent acts as the intelligent layer of the system. It reads instruction files stored inside the `skills/` directory and uses them to manage learning workflows. These workflows include skill ingestion, teaching sessions, and daily reviews. The goal was to create a system that behaves more like a personal technical mentor rather than a static LMS platform.
-
-n8n was used to automate workflows such as job market scanning and technology news aggregation. This allows the system to continuously collect external information and keep learning priorities aligned with industry trends.
-
-The project was built in phases to reduce complexity and create a clear development process. The first phase focused on the core infrastructure and database setup. Later phases introduced automation, workflow integration, CI/CD, and documentation.
-
----
+I built it in five phases — core setup first, then automations, then CI/CD, then 
+documentation. Each phase builds on the previous one. Starting with the database 
+meant every other component had something real to connect to from day one.
 
 ## Part 3 — The Execution
 
-During Phase 1, the core architecture of the system was established. PostgreSQL, Docker, pgAdmin, and NocoDB were configured to create the database environment and management dashboard. The initial AI instruction files were also structured during this phase.
+Phase 1 delivered the database, NocoDB, and the AI agent connection via MCP. 
+This was the hardest phase because it involved the most infrastructure — deploying 
+PostgreSQL on Dokploy, connecting NocoDB to the database, and getting the MCP 
+server running so Claude Desktop could query the database directly from chat.
 
-Phase 2 introduced automation workflows for scanning job postings and extracting market signals. This phase focused on collecting information about in-demand technologies and skills from external sources. Phase 3 extended the automation layer further by introducing personalized news feeds and relevance filtering for AI and technology updates.
+Phase 2 delivered the job scanner — an n8n workflow that runs daily, pulls job 
+postings from the Adzuna API, extracts skill keywords from job descriptions, and 
+saves the frequency counts to the market_signals table.
 
-Phase 4 focused on engineering discipline and repository management. GitHub Actions and CI/CD workflows were added to improve project organization and automation practices. The repository was structured to make the project easier to maintain and present.
+Phase 3 added the news feed — an n8n workflow that pulls from RSS feeds, filters 
+articles by relevance using keyword matching, and saves high and medium relevance 
+articles to the news_feed table.
 
-One of the most challenging parts of the project was integrating the AI workflow with database operations through MCP connections. Coordinating communication between the AI agent, workflow instructions, and database actions required careful debugging and architecture planning.
+Phase 4 added the GitHub repository and CI/CD pipeline. A GitHub Actions workflow 
+now validates the schema SQL on every push, catching syntax errors before they 
+reach the database.
 
-If the project continues in the future, the next improvements would include stabilizing MCP integration, adding authentication, building a dedicated frontend dashboard, and introducing analytics for learning progress.
+The hardest part was the NocoDB and MCP connection. The database and NocoDB were 
+on different Docker networks, and port 5432 was blocked by the server firewall. 
+This took significant troubleshooting to resolve. If I started again I would 
+deploy everything in a single Docker Compose file from the beginning.
 
-This project helped strengthen skills in system architecture, databases, automation, AI workflow design, GitHub workflows, and technical communication. More importantly, it demonstrated how multiple tools and technologies can work together to build a practical developer-focused platform.
+I will use this system throughout my developer journey — adding skills as I 
+encounter new technologies, running the daily review to stay aligned with the 
+job market, and using the learning sprint to go deep on the skills that matter most.
