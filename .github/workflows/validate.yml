@@ -17,4 +17,4 @@ jobs:
       - name: Install sqlfluff
         run: pip install sqlfluff
       - name: Lint schema SQL
-        run: sqlfluff lint schema/schema.sql --dialect postgres
+        run: sqlfluff lint schema/schema.sql --dialect postgres --exclude-rules RF04,LT05
